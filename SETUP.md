@@ -41,9 +41,9 @@ Keep a notes file open while you work. You'll copy about six values from one pla
 3. In the same node, copy the **Production URL** into your notes as **N8N_WEBHOOK_URL**. It ends in `/webhook/selah-ai`.
 4. Open the **OpenAI** node. Under **Credential for OpenAI**, choose the OpenAI credential you already use.
 5. (Optional) Open **Build OpenAI request** to change the models at the top:
-   - `MODEL_MAIN` is used for reflections, prayers and Ask.
-   - `MODEL_FAST` is the cheapest option.
-6. Click **Save**, then turn the workflow **Active** (or **Publish**).
+   - `MODEL_MAIN` (`gpt-6.1-sol`) is used for reflections, prayers and Ask.
+   - `MODEL_FAST` (`gpt-6-luna`) is the cheapest option. Use `gpt-6-luna` for both to spend the least.
+6. Click **Save**, then **Publish** (or switch the workflow to **Active**).
 
 For privacy, this workflow doesn't keep successful runs, so people's prayers aren't stored in n8n. It only keeps failed runs, so you can see what went wrong.
 
