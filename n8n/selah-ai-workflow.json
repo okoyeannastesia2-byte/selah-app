@@ -1,0 +1,141 @@
+{
+  "name": "Selah AI",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "selah-ai",
+        "authentication": "headerAuth",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "f510c418-9e0e-4665-b90e-07a58ae44a1e",
+      "name": "Selah app request",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "a3bb9f28-07f1-4aa1-b597-96dd87a78bd2"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Selah AI: builds the OpenAI request from what the Selah app sent.\n// Change the two model names below any time. Nothing else needs editing.\nconst MODEL_MAIN = 'gpt-6.1-sol';  // reflections, prayers, Ask (warmer writing)\nconst MODEL_FAST = 'gpt-6-luna';   // quick tasks (cheapest)\n\nconst b = $input.first().json.body || {};\nconst msgs = (Array.isArray(b.messages) ? b.messages : [])\n  .filter(m => m && (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string')\n  .slice(-30)\n  .map(m => ({ role: m.role, content: m.content.slice(0, 20000) }));\nif (!msgs.length) throw new Error('No messages received');\n\nlet system = 'You are the writing voice of Selah, a gentle Bible app for young Christians. ' +\n  'Follow the instructions in the conversation exactly. Never invent Bible verses. Never speak as God.';\nif (b.json === true) system += ' Reply with only one valid JSON object. No code fences, no extra text.';\n\nreturn [{ json: { payload: {\n  model: b.tier === 'quick' ? MODEL_FAST : MODEL_MAIN,\n  messages: [{ role: 'system', content: system }, ...msgs],\n  reasoning_effort: 'low',\n  max_completion_tokens: 3000\n} } }];"
+      },
+      "id": "5d9461ff-7b60-49a9-86d6-022a839cc076",
+      "name": "Build OpenAI request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/chat/completions",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "openAiApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.payload) }}",
+        "options": {
+          "timeout": 55000
+        }
+      },
+      "id": "5bf1fcb2-a074-4f40-bd85-590e0677655c",
+      "name": "OpenAI",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        480,
+        0
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ text: $json.choices[0].message.content }) }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "ef39bfb8-5e97-4764-b424-b6dd4f380106",
+      "name": "Send answer to Selah",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        720,
+        -80
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ error: 'OpenAI request failed' }) }}",
+        "options": {
+          "responseCode": 502
+        }
+      },
+      "id": "e94f026f-83ce-40c3-936e-8c86ca230800",
+      "name": "Send error to Selah",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        720,
+        100
+      ]
+    }
+  ],
+  "connections": {
+    "Selah app request": {
+      "main": [
+        [
+          {
+            "node": "Build OpenAI request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build OpenAI request": {
+      "main": [
+        [
+          {
+            "node": "OpenAI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI": {
+      "main": [
+        [
+          {
+            "node": "Send answer to Selah",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send error to Selah",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataSuccessExecution": "none",
+    "saveDataErrorExecution": "all"
+  },
+  "pinData": {}
+}

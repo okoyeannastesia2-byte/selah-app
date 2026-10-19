@@ -1,0 +1,8 @@
+{
+  "name": "selah",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Selah Bible app: standalone web app",
+  "type": "module",
+  "engines": { "node": ">=18" }
+}
