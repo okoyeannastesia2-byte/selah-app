@@ -6,8 +6,8 @@
 //
 // Environment variables (Vercel → Project → Settings → Environment Variables):
 //   SUPABASE_URL               https://xxxx.supabase.co
-//   SUPABASE_ANON_KEY          the anon public key
-//   SUPABASE_SERVICE_ROLE_KEY  the service_role key (secret, never in the app)
+//   SUPABASE_ANON_KEY          the Publishable key (or legacy anon key)
+//   SUPABASE_SERVICE_ROLE_KEY  the Secret key (or legacy service_role key) - never in the app
 //   N8N_WEBHOOK_URL            the Production URL of the Selah AI webhook in n8n
 //   N8N_SECRET                 the same secret you put in n8n's Header Auth credential
 //   AI_DAILY_LIMIT             optional, AI requests per person per day (default 30)
@@ -77,7 +77,8 @@ export default async function handler(req, res) {
   try {
     const r = await fetch(`${SUPABASE_URL}/rest/v1/rpc/bump_ai_usage`, {
       method: "POST",
-      headers: { apikey: SERVICE, authorization: `Bearer ${SERVICE}`, "content-type": "application/json" },
+      // New Supabase "sb_secret_" keys go only in the apikey header; older JWT keys also go in Authorization.
+      headers: Object.assign({ apikey: SERVICE, "content-type": "application/json" }, SERVICE.startsWith("eyJ") ? { authorization: `Bearer ${SERVICE}` } : {}),
       body: JSON.stringify({ p_user: userId, p_limit: LIMIT })
     });
     if (!r.ok) return send(res, 502, { error: "Couldn't check today's limit" });
